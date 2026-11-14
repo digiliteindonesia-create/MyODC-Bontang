@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pencari ODC Kota Bontang</title>
+    <!-- Memuat Leaflet CSS untuk Peta Interaktif -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #7c3aed 0%, #9333ea 50%, #c084fc 100%);
+            --primary-color: #7c3aed;
+            --primary-hover: #6d28d9;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+        }
+
+        /* Header Gradasi Ungu */
+        .header-banner {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 24px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.2);
+        }
+
+        .header-title-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-icon {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 12px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .header-title h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .header-title p {
+            margin: 4px 0 0 0;
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .badge-counter {
+            background: rgba(255, 255, 255, 0.25);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            backdrop-filter: blur(5px);
+        }
+
+        /* Container Utama */
+        .main-container {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        /* Card Kotak Pencarian */
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+            border: 1px solid #e2e8f0;
+            margin-bottom: 24px;
+        }
+
+        .card-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .search-input-wrapper {
+            position: relative;
+            margin-bottom: 12px;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 15px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            box-sizing: border-box;
+            outline: none;
+            transition: all 0.3s;
+            background: #fff;
+        }
+
+        .search-box:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+        }
+
+        .card-footer-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .btn-reset {
+            background: none;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            font-weight: 600;
+            padding: 0;
+        }
+        .btn-reset:hover { text-decoration: underline; }
+
+        /* Panel Tampilan Hasil atau Placeholder Kosong */
+        .result-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 2px dashed #cbd5e1;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .result-card.active {
+            border: 1px solid #e2e8f0;
+            border-style: solid;
+            text-align: left;
+            padding: 24px;
+        }
+
+        .empty-state-icon {
+            width: 50px;
+            height: 50px;
+            background: #f3e8ff;
+            color: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px auto;
+            font-size: 20px;
+        }
+
+        .empty-state h3 {
+            margin: 0 0 8px 0;
+            font-size: 16px;
+            color: var(--text-main);
+        }
+
+        .empty-state p {
+            margin: 0;
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* Detail ODC Terpilih */
+        .odc-detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 15px;
+        }
+
+        .odc-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0 0 5px 0;
+        }
+
+        .odc-coords {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-family: monospace;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-action {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 6px rgba(124, 58, 237, 0.2);
+            transition: opacity 0.2s;
+        }
+
+        .btn-action:hover { opacity: 0.9; }
+
+        #map {
+            height: 320px;
+            width: 100%;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        /* Pintasan ODC */
+        .shortcuts-section {
+            margin-bottom: 30px;
+        }
+
+        .shortcuts-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .chips-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .chip {
+            background: white;
+            border: 1px solid #cbd5e1;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-main);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+
+        .chip:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            background: #f3e8ff;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-muted);
+            padding-bottom: 30px;
+        }
+
+        /* Dropdown Saran Pencarian */
+        .suggestions-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            margin-top: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .suggestion-item {
+            padding: 10px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .suggestion-item:hover {
+            background-color: #f3e8ff;
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Gradasi Ungu -->
+    <div class="header-banner">
+        <div class="header-title-wrapper">
+            <div class="header-icon">📍</div>
+            <div class="header-title">
+                <h1>MyODC Bontang</h1>
+                <p>Sistem Informasi Titik Jaringan ODC Kota Bontang</p>
+            </div>
+        </div>
+        <div class="badge-counter" id="totalBadge">Memuat...</div>
+    </div>
+
+    <div class="main-container">
+        
+        <!-- Kotak Input / Pencarian -->
+        <div class="card">
+            <label class="card-label">Masukkan atau Pilih Nama ODC:</label>
+            <div class="search-input-wrapper">
+                <input type="text" id="searchInput" class="search-box" placeholder="Contoh: ODC-BOT-FAE atau ODC-LKT-FA..." oninput="onSearchInput()" autocomplete="off">
+                <!-- Dropdown Saran -->
+                <div id="suggestionsDropdown" class="suggestions-dropdown"></div>
+            </div>
+            <div class="card-footer-info">
+                <span>Tips: Mendukung pencarian seluruh titik ODC di Kota Bontang</span>
+                <button class="btn-reset" onclick="resetForm()">Reset</button>
+            </div>
+        </div>
+
+        <!-- Area Hasil / Peta Interaktif -->
+        <div id="resultCard" class="result-card">
+            <div class="empty-state" id="emptyState">
+                <div class="empty-state-icon">🔍</div>
+                <h3>Belum ada ODC yang dipilih</h3>
+                <p>Silakan ketik atau pilih nama ODC di atas untuk melihat detail koordinat dan peta interaktifnya.</p>
+            </div>
+            <div id="activeContent" style="display: none;">
+                <div class="odc-detail-header">
+                    <div>
+                        <h3 class="odc-title" id="selectedName">-</h3>
+                        <div class="odc-coords" id="selectedCoords">-</div>
+                    </div>
+                    <div class="action-buttons">
+                        <a id="sharelockBtn" href="#" target="_blank" class="btn-action">🔗 Buka Sharelock</a>
+                    </div>
+                </div>
+                <div id="map"></div>
+            </div>
+        </div>
+
+        <!-- Pintasan / Shortcut Beberapa ODC -->
+        <div class="shortcuts-section">
+            <div class="shortcuts-title">Pintasan Beberapa ODC Bontang:</div>
+            <div class="chips-container" id="shortcutsContainer">
+                <!-- Tombol cepat akan dimuat otomatis di sini -->
+            </div>
+        </div>
+
+        <div class="footer">
+            © 2026 Pencari ODC Bontang • Sistem Pemetaan Titik Jaringan Terpadu
+        </div>
+
+    </div>
+
+    <!-- Memuat Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Data Master 55 ODC Bontang
+        const dataODC = [
+            { name: "ODC-BOT-FAE", lat: 0.119328014882999, lng: 117.48577699019 },
+            { name: "ODC-BOT-FAC", lat: 0.12877693001796, lng: 117.480629823275 },
+            { name: "ODC-BOT-FAF", lat: 0.116208978602061, lng: 117.480953037114 },
+            { name: "ODC-BOT-FAG", lat: 0.109537828094936, lng: 117.484767463473 },
+            { name: "ODC-BOT-FAH", lat: 0.136342977535122, lng: 117.488232984176 },
+            { name: "ODC-BOT-FAJ", lat: 0.138255307597887, lng: 117.496146872335 },
+            { name: "ODC-BOT-FAK", lat: 0.133892467632696, lng: 117.500250735879 },
+            { name: "ODC-BOT-FAM", lat: 0.115967960927936, lng: 117.492849965411 },
+            { name: "ODC-BOT-FAN", lat: 0.131722590794642, lng: 117.486510913777 },
+            { name: "ODC-BOT-FAP", lat: 0.12475032789611, lng: 117.490386874733 },
+            { name: "ODC-BOT-FAU", lat: 0.120516214843591, lng: 117.481504872193 },
+            { name: "ODC-BOT-FAV", lat: 0.126965300472011, lng: 117.500190458923 },
+            { name: "ODC-BOT-FAX", lat: 0.123591772415445, lng: 117.491871250909 },
+            { name: "ODC-BOT-FAZ", lat: 0.135070336556743, lng: 117.507875725842 },
+            { name: "ODC-BOT-FBA", lat: 0.109640325748872, lng: 117.4847379089 },
+            { name: "ODC-BOT-FBB", lat: 0.1346250424597, lng: 117.493039689599 },
+            { name: "ODC-BOT-FBE", lat: 0.11753201559096, lng: 117.477717664787 },
+            { name: "ODC-BOT-FBF", lat: 0.139315407474278, lng: 117.489589350424 },
+            { name: "ODC-BOT-FBG", lat: 0.131867039647756, lng: 117.49215404056 },
+            { name: "ODC-BOT-FBJ", lat: 0.1186879661267, lng: 117.490450026298 },
+            { name: "ODC-BOT-FBM", lat: 0.138252971982492, lng: 117.49604374574 },
+            { name: "ODC-BOT-FE", lat: 0.132418334799245, lng: 117.490566447958 },
+            { name: "ODC-BOT-FF", lat: 0.133913667836346, lng: 117.491537975938 },
+            { name: "ODC-BOT-FG", lat: 0.137018239904514, lng: 117.485541990911 },
+            { name: "ODC-BOT-FH", lat: 0.134101684896188, lng: 117.506508849306 },
+            { name: "ODC-BOT-FJ", lat: 0.125740539319684, lng: 117.484337080621 },
+            { name: "ODC-BOT-FK", lat: 0.1297365088417, lng: 117.48528920499 },
+            { name: "ODC-BOT-FN", lat: 0.136819083769954, lng: 117.482365278572 },
+            { name: "ODC-BOT-FP", lat: 0.132666089730333, lng: 117.47981612929 },
+            { name: "ODC-BOT-FQ", lat: 0.128779175802547, lng: 117.480676535669 },
+            { name: "ODC-BOT-FT", lat: 0.136156757113703, lng: 117.491213953615 },
+            { name: "ODC-BOT-FV", lat: 0.120513250407346, lng: 117.481544218402 },
+            { name: "ODC-BOT-FY", lat: 0.136386635578796, lng: 117.488292991637 },
+            { name: "ODC-LKT-FA", lat: 0.175318000198285, lng: 117.468257955687 },
+            { name: "ODC-LKT-FC", lat: 0.143065327509049, lng: 117.47508299589 },
+            { name: "ODC-LKT-FD", lat: 0.148277521668024, lng: 117.469816712368 },
+            { name: "ODC-LKT-FE", lat: 0.168152698768666, lng: 117.467283553098 },
+            { name: "ODC-LKT-FF", lat: 0.165241176987949, lng: 117.463159657124 },
+            { name: "ODC-LKT-FH", lat: 0.167479053986384, lng: 117.455176598688 },
+            { name: "ODC-LKT-FJ", lat: 0.182866340264272, lng: 117.468597069707 },
+            { name: "ODC-LKT-FK", lat: 0.189574037814084, lng: 117.475316018874 },
+            { name: "ODC-LKT-FL", lat: 0.170421118187141, lng: 117.477828067735 },
+            { name: "ODC-LKT-FM", lat: 0.171078683106293, lng: 117.479955727485 },
+            { name: "ODC-LKT-FN", lat: 0.167203361778234, lng: 117.48283770258 },
+            { name: "ODC-LKT-FQ", lat: 0.171170760160076, lng: 117.479908565933 },
+            { name: "ODC-LKT-FS", lat: 0.167228604368923, lng: 117.482949273338 },
+            { name: "ODC-LKT-FT", lat: 0.195959958372689, lng: 117.474960016527 }
+        ];
+
+        document.getElementById('totalBadge').innerText = `📡 ${dataODC.length} Titik Terdaftar`;
+
+        let map = null;
+        let currentMarker = null;
+
+        // Render tombol pintasan cepat di bawah
+        function renderShortcuts() {
+            const container = document.getElementById('shortcutsContainer');
+            // Ambil beberapa sampel data untuk pintasan
+            const samples = dataODC.slice(0, 8);
+            samples.forEach(odc => {
+                const chip = document.createElement('div');
+                chip.className = 'chip';
+                chip.innerHTML = `📍 ${odc.name}`;
+                chip.onclick = () => selectODC(odc.name);
+                container.appendChild(chip);
+            });
+        }
+
+        // Fungsi saat mengetik di input pencarian
+        function onSearchInput() {
+            const val = document.getElementById('searchInput').value.trim().toLowerCase();
+            const dropdown = document.getElementById('suggestionsDropdown');
+            dropdown.innerHTML = '';
+
+            if (!val) {
+                dropdown.style.display = 'none';
+                return;
+            }
+
+            const matched = dataODC.filter(item => item.name.toLowerCase().includes(val));
+
+            if (matched.length > 0) {
+                dropdown.style.display = 'block';
+                matched.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'suggestion-item';
+                    div.innerText = item.name;
+                    div.onclick = () => {
+                        document.getElementById('searchInput').value = item.name;
+                        dropdown.style.display = 'none';
+                        selectODC(item.name);
+                    };
+                    dropdown.appendChild(div);
+                });
+            } else {
+                dropdown.style.display = 'none';
+            }
+        }
+
+        // Pilih ODC dan tampilkan detail serta peta
+        function selectODC(name) {
+            const odc = dataODC.find(item => item.name.toLowerCase() === name.toLowerCase());
+            if (!odc) return;
+
+            document.getElementById('searchInput').value = odc.name;
+            document.getElementById('suggestionsDropdown').style.display = 'none';
+
+            // Ubah tampilan card hasil
+            const resultCard = document.getElementById('resultCard');
+            resultCard.classList.add('active');
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('activeContent').style.display = 'block';
+
+            // Set teks detail
+            document.getElementById('selectedName').innerText = odc.name;
+            document.getElementById('selectedCoords').innerText = `Koordinat (Lat, Lng): ${odc.lat}, ${odc.lng}`;
+            document.getElementById('sharelockBtn').href = `https://www.google.com/maps?q=${odc.lat},${odc.lng}`;
+
+            // Inisialisasi atau perbarui peta Leaflet
+            setTimeout(() => {
+                if (!map) {
+                    map = L.map('map').setView([odc.lat, odc.lng], 16);
+                    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles © Esri'
+}).addTo(map);
+                } else {
+                    map.setView([odc.lat, odc.lng], 16);
+                    if (currentMarker) {
+                        map.removeLayer(currentMarker);
+                    }
+                }
+
+                currentMarker = L.marker([odc.lat, odc.lng]).addTo(map)
+                    .bindPopup(`<b>${odc.name}</b><br>Lat: ${odc.lat}<br>Lng: ${odc.lng}`)
+                    .openPopup();
+            }, 150);
+        }
+
+        // Reset Form
+        function resetForm() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('suggestionsDropdown').style.display = 'none';
+            const resultCard = document.getElementById('resultCard');
+            resultCard.classList.remove('active');
+            document.getElementById('emptyState').style.display = 'block';
+            document.getElementById('activeContent').style.display = 'none';
+        }
+
+        // Tutup dropdown jika klik di luar
+        window.onclick = function(event) {
+            if (!event.target.closest('.search-input-wrapper')) {
+                document.getElementById('suggestionsDropdown').style.display = 'none';
+            }
+        }
+
+        // Inisialisasi awal halaman
+        renderShortcuts();
+    </script>
+</body>
+</html>
